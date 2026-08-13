@@ -32,6 +32,12 @@ const LEVELS = [
    "IMG_00023", "IMG_00028", "IMG_00025", "IMG_00020", "IMG_00018", "IMG_00001"],
 ];
 
+// URL der deployten Google-Apps-Script-Web-App (siehe README, Abschnitt
+// "Zentrale Speicherung"). Leer = Dummy-Modus, Ergebnisse werden nur in die
+// Konsole geloggt statt zentral gespeichert -- CSV-Download passiert in
+// beiden Faellen zusaetzlich.
+const SUBMIT_URL = "";
+
 const levelStates = LEVELS.map(() => ({
   order: [],            // Bild-IDs in Rangfolge (Index 0 = Rang 1)
   comments: {},          // Bild-ID -> Kommentartext
@@ -263,9 +269,13 @@ submitBtn.addEventListener("click", async () => {
   levelState.completed = result.ok;
   renderLevelBar();
 
-  statusMsg.textContent = result.ok
-    ? "Danke! Bewertung übermittelt (Test-/Platzhaltermodus – noch kein echter Server angebunden) und als CSV heruntergeladen."
-    : "Fehler beim Übermitteln – CSV wurde trotzdem heruntergeladen.";
+  if (result.dummy) {
+    statusMsg.textContent = "Danke! (Test-/Platzhaltermodus – keine SUBMIT_URL gesetzt, siehe README) und als CSV heruntergeladen.";
+  } else if (result.ok) {
+    statusMsg.textContent = "Danke! Bewertung an die Google-Tabelle übermittelt und zusätzlich als CSV heruntergeladen.";
+  } else {
+    statusMsg.textContent = "Fehler beim Übermitteln an die Google-Tabelle – CSV wurde trotzdem heruntergeladen.";
+  }
   submitBtn.disabled = false;
 
   console.log("Ergebnis-Payload:", payload);
@@ -312,17 +322,42 @@ function downloadResultsCsv(payload) {
 }
 
 // ------------------------------------------------------------------------
-// Platzhalter fuer die spaetere echte Server-Anbindung. Fuer den Testbetrieb
-// reicht dieses Dummy: es simuliert eine Netzwerkanfrage und loggt die
-// Nutzdaten in die Konsole. Vor dem produktiven Einsatz hier durch einen
-// echten fetch()-Aufruf gegen ein Backend ersetzen (z. B. eigener kleiner
-// Server, Google Apps Script Webhook, Formspree o. Ae.) und dabei die
-// DSGVO-Anforderungen (Pseudonymisierung, Speicherort) beruecksichtigen.
+// Sendet an die Google-Apps-Script-Web-App (siehe README, Abschnitt
+// "Zentrale Speicherung" + apps-script/Code.gs), die jedes Bild der
+// Rangfolge als eigene Zeile in eine Google-Tabelle schreibt. Solange
+// SUBMIT_URL leer ist (noch nicht deployt), faellt dies auf ein Dummy
+// zurueck, das nur in die Konsole loggt -- der CSV-Download passiert davon
+// unabhaengig in jedem Fall (siehe submitBtn-Handler oben).
+//
+// Content-Type bewusst auf dem fetch()-Default (text/plain) belassen: ein
+// expliziter "application/json"-Header wuerde einen CORS-Preflight
+// ausloesen, den Apps-Script-Web-Apps nicht sauber beantworten. Der Body
+// ist trotzdem valides JSON, e.postData.contents in Code.gs parst ihn ganz
+// normal mit JSON.parse().
 // ------------------------------------------------------------------------
 async function submitResults(payload) {
-  console.log("[DUMMY SUBMIT]", payload);
-  await new Promise((resolve) => setTimeout(resolve, 400));
-  return { ok: true, dummy: true };
+  if (!SUBMIT_URL) {
+    console.log("[DUMMY SUBMIT – keine SUBMIT_URL gesetzt]", payload);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    return { ok: true, dummy: true };
+  }
+
+  const enrichedPayload = {
+    ...payload,
+    imageSizes: Object.fromEntries(payload.order.map((id) => [id, IMAGE_JPEG_SIZES[id] ?? null])),
+  };
+
+  try {
+    const response = await fetch(SUBMIT_URL, {
+      method: "POST",
+      body: JSON.stringify(enrichedPayload),
+    });
+    const json = await response.json();
+    return { ok: !!json.ok, dummy: false };
+  } catch (err) {
+    console.error("Uebermittlung an Google Sheet fehlgeschlagen:", err);
+    return { ok: false, dummy: false };
+  }
 }
 
 renderLevelBar();

@@ -25,22 +25,40 @@ Zuordnung steht in `js/app.js` (Konstante `LEVELS`).
 
 Die Seite ist eine rein statische Anwendung (HTML/CSS/JS, kein Build-Schritt)
 für GitHub Pages und hat **keinen eigenen Server**. Beim Abschluss einer
-Bewertung (pro Level) passiert aktuell zweierlei:
+Bewertung (pro Level) passiert zweierlei:
 
-1. Ein simuliertes "Senden" an einen Server (`js/app.js`, Funktion
-   `submitResults()`) — nur Konsolen-Log, kein echter Server angebunden.
-2. Ein **automatischer CSV-Download** (`downloadResultsCsv()`) mit Rang,
-   Bild-ID, JPEG-Dateigröße und Kommentar pro Bild sowie Level, Session-ID,
-   Zeitstempel und allgemeinem Kommentar als Metadaten am Ende der Datei —
-   damit sich Rangfolge und Dateigröße direkt gegenüberstellen lassen (z. B.
-   in Excel/Numbers), auch ohne echten Server.
+1. **Übermittlung an eine zentrale Google-Tabelle** über eine Google-Apps-
+   Script-Web-App (`apps-script/Code.gs`, siehe Einrichtung unten) — jedes
+   Bild der Rangfolge landet als eigene Zeile (Rang, Bild-ID, JPEG-
+   Dateigröße, Kommentar, Level, Session-ID, Zeitstempel, allgemeiner
+   Kommentar) in einem Sheet, das nur du siehst. Solange die Web-App-URL
+   noch nicht eingetragen ist (`SUBMIT_URL` in `js/app.js`), läuft das im
+   Dummy-Modus: nur Konsolen-Log, keine echte Übermittlung.
+2. Zusätzlich immer ein **automatischer CSV-Download** (`downloadResultsCsv()`)
+   mit denselben Daten für den lokalen Schnellblick — unabhängig davon, ob
+   die Google-Tabelle erreichbar ist.
 
-**Vor dem produktiven Einsatz** (echte Probandinnen/Probanden) muss
-`submitResults()` durch einen echten `fetch()`-Aufruf gegen ein Backend
-ersetzt werden (eigener kleiner Server, Google Apps Script Webhook,
-Formspree o. Ä.) — unter Berücksichtigung der DSGVO-Anforderungen
-(Pseudonymisierung, Speicherort, siehe Exposé). Der CSV-Download kann
-parallel dazu bestehen bleiben oder entfernt werden.
+### Einrichtung der Google-Tabelle (einmalig, ca. 10 Minuten)
+
+1. Neues Google Sheet anlegen (sheets.new).
+2. **Erweiterungen → Apps Script** öffnen, den Beispielcode löschen und den
+   Inhalt von [`apps-script/Code.gs`](apps-script/Code.gs) einfügen. Speichern.
+3. **Bereitstellen → Neue Bereitstellung → Typ: Web-App**.
+   - Ausführen als: **Ich** (dein Google-Konto)
+   - Zugriff: **Jeder** ("Anyone") — wichtig, sonst verlangt Apps Script
+     einen Google-Login von jeder Probandin/jedem Probanden und die App
+     bekommt einen Redirect statt einer Antwort.
+4. Bereitstellen, die generierte **Web-App-URL** kopieren (endet auf `/exec`).
+5. Diese URL in `js/app.js` bei `const SUBMIT_URL = "";` eintragen.
+6. Beim ersten echten Aufruf fragt Google einmalig nach Berechtigung für
+   das Script (Zugriff aufs eigene Sheet) — das bestätigst du einmalig in
+   deinem eigenen Google-Konto, nicht die Probandinnen/Probanden.
+
+**DSGVO-Hinweis:** Die Tabelle liegt in deinem Google-Konto/-Workspace —
+für den produktiven Feldeinsatz (echte Teilnehmende) prüfen, ob das mit
+eurer DSGVO-Dokumentation (Auftragsverarbeitung durch Google, Speicherort)
+vereinbar ist, analog zur bereits im Exposé mitgedachten
+Pseudonymisierung/Speicherort-Frage.
 
 ## Lokal testen
 
