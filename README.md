@@ -33,10 +33,31 @@ Bewertung (pro Level) passiert zweierlei:
    Dateigröße, Kommentar, Level, Session-ID, Zeitstempel, allgemeiner
    Kommentar) in einem Sheet, das nur du siehst. Solange die Web-App-URL
    noch nicht eingetragen ist (`SUBMIT_URL` in `js/app.js`), läuft das im
-   Dummy-Modus: nur Konsolen-Log, keine echte Übermittlung.
+   Dummy-Modus: nur Konsolen-Log, keine echte Übermittlung. Ist die URL
+   gesetzt, aktuell bereits der Fall (siehe Einrichtung unten für die
+   verwendete Tabelle/das Script).
 2. Zusätzlich immer ein **automatischer CSV-Download** (`downloadResultsCsv()`)
    mit denselben Daten für den lokalen Schnellblick — unabhängig davon, ob
    die Google-Tabelle erreichbar ist.
+
+**Bekannte Einschränkung (CORS):** Apps-Script-Web-Apps senden keinen
+`Access-Control-Allow-Origin`-Header, ein regulärer `fetch()` von
+`localhost`/GitHub Pages aus schlägt daher mit einem CORS-Fehler fehl,
+obwohl der Request server-seitig ankommt. Deshalb nutzt `submitResults()`
+`mode: "no-cors"` — funktioniert zuverlässig (verifiziert: Zeilen landen im
+Sheet), aber die Antwort ist dadurch "opaque": die App kann nicht wirklich
+auslesen, ob `doPost()` intern erfolgreich war oder einen Fehler geworfen
+hat, sondern nur, ob der Request überhaupt rausging. Die Statusmeldung in
+der App weist entsprechend darauf hin ("technisch nicht bestätigbar").
+
+**Bekannte Einschränkung (keine Authentifizierung):** Die Web-App-URL ist
+zwangsläufig öffentlich im Client-Code sichtbar (jeder, der die GitHub-
+Pages-Seite besucht, kann sie im Quelltext finden) und akzeptiert Requests
+ohne weitere Prüfung — theoretisch könnte also jemand mit der URL beliebige
+Zeilen in die Tabelle schreiben. Für eine Pilotstudie mit überschaubarer
+Teilnehmerzahl vertretbar, für den späteren produktiven Feldeinsatz ggf.
+noch einmal bewerten (z. B. ein einfaches geheimes Token als zusätzliches
+Payload-Feld, das `doPost()` prüft).
 
 ### Einrichtung der Google-Tabelle (einmalig, ca. 10 Minuten)
 
@@ -52,7 +73,17 @@ Bewertung (pro Level) passiert zweierlei:
 5. Diese URL in `js/app.js` bei `const SUBMIT_URL = "";` eintragen.
 6. Beim ersten echten Aufruf fragt Google einmalig nach Berechtigung für
    das Script (Zugriff aufs eigene Sheet) — das bestätigst du einmalig in
-   deinem eigenen Google-Konto, nicht die Probandinnen/Probanden.
+   deinem eigenen Google-Konto, nicht die Probandinnen/Probanden. Dabei
+   gibt es zwei **getrennte** Autorisierungs-Dialoge, die beide einmalig
+   bestätigt werden müssen: einer beim ersten Speichern/Ausführen im
+   Apps-Script-Editor selbst, ein zweiter (eigenes "Authorization needed"-
+   bzw. "Autorisierung erforderlich"-Fenster mit "Erweitert" →
+   "Zu … (unsicher) wechseln" → "Zulassen") beim allerersten echten Aufruf
+   der Web-App-URL. Falls dabei "Datei kann derzeit nicht geöffnet werden"
+   erscheint: meist liegt es daran, dass im Browser mehrere Google-Konten
+   gleichzeitig eingeloggt sind und das falsche aktiv ist (URL enthält dann
+   `/u/1/` statt `/u/0/`) — im Zweifel alle bis auf das richtige Konto
+   abmelden.
 
 **DSGVO-Hinweis:** Die Tabelle liegt in deinem Google-Konto/-Workspace —
 für den produktiven Feldeinsatz (echte Teilnehmende) prüfen, ob das mit

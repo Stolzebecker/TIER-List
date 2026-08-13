@@ -36,7 +36,7 @@ const LEVELS = [
 // "Zentrale Speicherung"). Leer = Dummy-Modus, Ergebnisse werden nur in die
 // Konsole geloggt statt zentral gespeichert -- CSV-Download passiert in
 // beiden Faellen zusaetzlich.
-const SUBMIT_URL = "";
+const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbzihufA6kTn-kea5re-lGZUbtvg_IjZ7N5LsuGHzbCjMje4T0O29FHjsdbH_vfttf1u/exec";
 
 const levelStates = LEVELS.map(() => ({
   order: [],            // Bild-IDs in Rangfolge (Index 0 = Rang 1)
@@ -271,6 +271,8 @@ submitBtn.addEventListener("click", async () => {
 
   if (result.dummy) {
     statusMsg.textContent = "Danke! (Test-/Platzhaltermodus – keine SUBMIT_URL gesetzt, siehe README) und als CSV heruntergeladen.";
+  } else if (result.unverified) {
+    statusMsg.textContent = "Danke! Bewertung an die Google-Tabelle gesendet (Übermittlung technisch nicht bestätigbar, siehe README) und zusätzlich als CSV heruntergeladen.";
   } else if (result.ok) {
     statusMsg.textContent = "Danke! Bewertung an die Google-Tabelle übermittelt und zusätzlich als CSV heruntergeladen.";
   } else {
@@ -334,6 +336,17 @@ function downloadResultsCsv(payload) {
 // ausloesen, den Apps-Script-Web-Apps nicht sauber beantworten. Der Body
 // ist trotzdem valides JSON, e.postData.contents in Code.gs parst ihn ganz
 // normal mit JSON.parse().
+//
+// mode: "no-cors" ist hier bewusst gesetzt, nicht nur eine Falloption:
+// Apps-Script-Web-Apps senden bei /exec keinen
+// Access-Control-Allow-Origin-Header, ein regulaerer fetch() wirft daher
+// IMMER einen CORS-Fehler, obwohl der Request server-seitig ankommt und
+// doPost() ausgefuehrt wird (verifiziert: Zeilen landen im Sheet). Mit
+// no-cors wird die Antwort "opaque" -- wir koennen also nicht lesen, ob
+// doPost() intern ok:true oder ok:false zurueckgegeben hat, sondern nur,
+// ob der Request ueberhaupt rausgegangen ist (kein Netzwerkfehler). Ein
+// echtes ok/Fehler-Feedback braeuchte einen eigenen Server statt Apps
+// Script, oder einen Cloudflare-Worker/kleinen Proxy davor.
 // ------------------------------------------------------------------------
 async function submitResults(payload) {
   if (!SUBMIT_URL) {
@@ -348,12 +361,12 @@ async function submitResults(payload) {
   };
 
   try {
-    const response = await fetch(SUBMIT_URL, {
+    await fetch(SUBMIT_URL, {
       method: "POST",
+      mode: "no-cors",
       body: JSON.stringify(enrichedPayload),
     });
-    const json = await response.json();
-    return { ok: !!json.ok, dummy: false };
+    return { ok: true, dummy: false, unverified: true };
   } catch (err) {
     console.error("Uebermittlung an Google Sheet fehlgeschlagen:", err);
     return { ok: false, dummy: false };
