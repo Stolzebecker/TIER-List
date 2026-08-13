@@ -66,12 +66,14 @@ function onDragEnd(e) {
   updateSubmitState();
 }
 
-function getDragAfterElement(container, x) {
+function getDragAfterElement(container, x, y, vertical) {
   const cards = [...container.querySelectorAll(".card:not(.dragging)")];
   return cards.reduce(
     (closest, child) => {
       const box = child.getBoundingClientRect();
-      const offset = x - box.left - box.width / 2;
+      const offset = vertical
+        ? y - box.top - box.height / 2
+        : x - box.left - box.width / 2;
       if (offset < 0 && offset > closest.offset) {
         return { offset, element: child };
       }
@@ -82,12 +84,13 @@ function getDragAfterElement(container, x) {
 }
 
 [rankingTrack, poolTrack].forEach((track) => {
+  const vertical = track === rankingTrack;
   track.addEventListener("dragover", (e) => {
     e.preventDefault();
     track.classList.add("drag-over");
     const dragging = document.querySelector(".dragging");
     if (!dragging) return;
-    const afterEl = getDragAfterElement(track, e.clientX);
+    const afterEl = getDragAfterElement(track, e.clientX, e.clientY, vertical);
     if (afterEl == null) {
       track.appendChild(dragging);
     } else {

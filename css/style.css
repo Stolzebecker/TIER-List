@@ -9,11 +9,9 @@ body {
 
 .layout {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  grid-template-rows: 44% 56%;
-  grid-template-areas:
-    "ranking comments"
-    "pool comments";
+  grid-template-columns: 240px 1fr 340px;
+  grid-template-rows: 1fr;
+  grid-template-areas: "ranking pool comments";
   height: 100vh;
   gap: 1px;
   background: #d8dadf;
@@ -22,31 +20,39 @@ body {
 .ranking-zone, .pool-zone, .comments-zone {
   background: #fff;
   padding: 16px 20px;
-  overflow: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .ranking-zone { grid-area: ranking; }
 .pool-zone { grid-area: pool; }
-.comments-zone { grid-area: comments; display: flex; flex-direction: column; gap: 16px; }
+.comments-zone { grid-area: comments; gap: 16px; overflow: auto; }
 
 h2 { margin: 0 0 12px; font-size: 1.05rem; }
-.hint { font-weight: 400; font-size: 0.82rem; color: #666; margin-left: 6px; }
+.hint { display: block; font-weight: 400; font-size: 0.82rem; color: #666; margin-top: 2px; }
 
 .track {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  align-content: flex-start;
   min-height: 170px;
   padding: 10px;
   border: 2px dashed #c7c9ce;
   border-radius: 8px;
   transition: border-color 0.15s ease;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .ranking-zone .track {
+  flex-direction: column;
   flex-wrap: nowrap;
-  overflow-x: auto;
-  min-height: 200px;
+}
+
+.pool-zone .track {
+  align-content: flex-start;
 }
 
 .track.drag-over { border-color: #2563eb; }
@@ -62,6 +68,8 @@ h2 { margin: 0 0 12px; font-size: 1.05rem; }
   cursor: grab;
   user-select: none;
 }
+
+.ranking-zone .card { width: 100%; }
 
 .card:active { cursor: grabbing; }
 .card.dragging { opacity: 0.35; }
@@ -188,4 +196,7 @@ h2 { margin: 0 0 12px; font-size: 1.05rem; }
     height: auto;
     min-height: 100vh;
   }
+
+  .ranking-zone .track { max-height: 280px; }
+  .pool-zone .track { max-height: 360px; }
 }
