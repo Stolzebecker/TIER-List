@@ -4,48 +4,43 @@ Kleine Web-Anwendung für das Rangreihenverfahren (Tier-List-Übung) im Rahmen
 der Experteninterviews/Pilotphase von Julian Stolz' Promotion (PH Heidelberg,
 visuelle Komplexität von Fernerkundungsbildern).
 
-Probandinnen und Probanden ziehen 12 Satellitenbilder per Drag & Drop von der
-Bilder-Ablage (unten) in eine eindeutige Rangfolge (oben, Rang 1 = links).
-Jedes Bild lässt sich über die Lupe vergrößern. Rechts können ein
-allgemeiner Kommentar sowie ein Kommentar pro ausgewähltem Bild hinterlegt
-werden.
+Probandinnen und Probanden ziehen pro Level 12 Satellitenbilder per Drag &
+Drop von der Bilder-Ablage (Mitte) in eine eindeutige Rangfolge (links,
+vertikal, Rang 1 = oben). Jedes Bild lässt sich über die Lupe vergrößern.
+Rechts können ein allgemeiner Kommentar sowie ein Kommentar pro
+ausgewähltem Bild hinterlegt werden.
 
-## Bildauswahl
+## Level & Bildauswahl
 
-Die 12 Bilder wurden aus dem 36 Bilder umfassenden Sentinel-2-Pool (siehe
-`../Satellitenbilder/`) so ausgewählt, dass die JPEG-Dateigröße (Proxy für
-visuelle Komplexität, siehe Fortschrittsdokumentation Bildakquise) möglichst
-gleichmäßig über das gesamte Spektrum verteilt ist — bewusste/purposive
-Stichprobe, keine Zufallsauswahl:
+Alle 36 Bilder des Sentinel-2-Pools (siehe `../Satellitenbilder/`) werden
+genutzt, aufgeteilt in **3 Level zu je 12 Bildern** (oben in der Leiste
+umschaltbar, Fortschritt pro Level bleibt beim Wechseln erhalten). Jedes
+Level enthält, wie ursprünglich die einzelne Pilot-Auswahl, Bilder über das
+gesamte JPEG-Dateigrößen-Spektrum verteilt (jedes 3. Bild der nach Größe
+sortierten Gesamtliste) — bewusste/purposive Stichprobe pro Level, damit
+kein Level nur "einfache" oder nur "komplexe" Bilder enthält. Die genaue
+Zuordnung steht in `js/app.js` (Konstante `LEVELS`).
 
-| Bild | JPEG-Größe (Byte) |
-|---|---|
-| IMG_00036 | 84.596 |
-| IMG_00027 | 88.560 |
-| IMG_00021 | 93.217 |
-| IMG_00002 | 106.114 |
-| IMG_00014 | 107.432 |
-| IMG_00019 | 110.361 |
-| IMG_00011 | 121.988 |
-| IMG_00008 | 130.472 |
-| IMG_00033 | 141.188 |
-| IMG_00020 | 153.174 |
-| IMG_00018 | 167.870 |
-| IMG_00001 | 190.644 |
-
-## Datenerfassung — aktuell nur Platzhalter
+## Datenerfassung
 
 Die Seite ist eine rein statische Anwendung (HTML/CSS/JS, kein Build-Schritt)
 für GitHub Pages und hat **keinen eigenen Server**. Beim Abschluss einer
-Bewertung wird das Ergebnis (Rangfolge, Bild- und allgemeine Kommentare)
-aktuell nur simuliert "gesendet" und in der Browser-Konsole ausgegeben
-(`js/app.js`, Funktion `submitResults()`), sonst gehen die Daten beim
-Schließen der Seite verloren.
+Bewertung (pro Level) passiert aktuell zweierlei:
 
-**Vor dem produktiven Einsatz** muss `submitResults()` durch einen echten
-`fetch()`-Aufruf gegen ein Backend ersetzt werden (eigener kleiner Server,
-Google Apps Script Webhook, Formspree o. Ä.) — unter Berücksichtigung der
-DSGVO-Anforderungen (Pseudonymisierung, Speicherort, siehe Exposé).
+1. Ein simuliertes "Senden" an einen Server (`js/app.js`, Funktion
+   `submitResults()`) — nur Konsolen-Log, kein echter Server angebunden.
+2. Ein **automatischer CSV-Download** (`downloadResultsCsv()`) mit Rang,
+   Bild-ID, JPEG-Dateigröße und Kommentar pro Bild sowie Level, Session-ID,
+   Zeitstempel und allgemeinem Kommentar als Metadaten am Ende der Datei —
+   damit sich Rangfolge und Dateigröße direkt gegenüberstellen lassen (z. B.
+   in Excel/Numbers), auch ohne echten Server.
+
+**Vor dem produktiven Einsatz** (echte Probandinnen/Probanden) muss
+`submitResults()` durch einen echten `fetch()`-Aufruf gegen ein Backend
+ersetzt werden (eigener kleiner Server, Google Apps Script Webhook,
+Formspree o. Ä.) — unter Berücksichtigung der DSGVO-Anforderungen
+(Pseudonymisierung, Speicherort, siehe Exposé). Der CSV-Download kann
+parallel dazu bestehen bleiben oder entfernt werden.
 
 ## Lokal testen
 
