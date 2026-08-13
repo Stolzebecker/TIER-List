@@ -8,35 +8,42 @@
 </head>
 <body>
 <div class="page">
-<nav id="level-bar" class="level-bar" aria-label="Level-Auswahl"></nav>
-<div class="layout">
-  <header class="ranking-zone">
-    <h2>Rangreihenfolge <span class="hint">Bilder hierher ziehen, oben = Rang 1</span></h2>
-    <div id="ranking-track" class="track" data-zone="ranking"></div>
+  <header class="topbar">
+    <nav id="level-bar" class="level-bar" aria-label="Level-Auswahl"></nav>
+    <div class="legend">
+      <span class="legend-text">Bild auswählen, dann Zielposition anklicken</span>
+      <span class="legend-tag legend-tag--easy">einfach</span>
+      <span class="legend-gradient" aria-hidden="true"></span>
+      <span class="legend-tag legend-tag--hard">komplex</span>
+    </div>
   </header>
 
-  <main class="pool-zone">
-    <h2>Bilder <span class="hint">zum Vergrößern auf die Lupe klicken</span></h2>
-    <div id="pool-track" class="track" data-zone="pool"></div>
-  </main>
+  <div class="layout">
+    <section class="ranking-zone" aria-label="Rangreihenfolge, Rang 1 = einfach, Rang 12 = komplex">
+      <div id="ranking-track" class="track track--ranking" data-zone="ranking"></div>
+    </section>
 
-  <aside class="comments-zone">
-    <h2>Kommentare</h2>
+    <main class="pool-zone" aria-label="Bilder-Pool">
+      <div id="pool-track" class="track track--pool" data-zone="pool"></div>
+    </main>
 
-    <div class="comment-block">
-      <label for="general-comment">Allgemeiner Kommentar</label>
-      <textarea id="general-comment" placeholder="Anmerkungen zur gesamten Rangreihe..."></textarea>
-    </div>
+    <aside class="comments-zone">
+      <h2>Kommentare</h2>
 
-    <div class="comment-block">
-      <label id="active-image-label">Bildkommentar – kein Bild ausgewählt</label>
-      <textarea id="image-comment" placeholder="Bild anklicken, um hier einen Kommentar zu hinterlassen..." disabled></textarea>
-    </div>
+      <div class="comment-block">
+        <label for="general-comment">Allgemeiner Kommentar</label>
+        <textarea id="general-comment" placeholder="Anmerkungen zur gesamten Rangreihe..."></textarea>
+      </div>
 
-    <button id="submit-btn" type="button" disabled>Bewertung abschließen</button>
-    <p id="status-msg" class="status" role="status"></p>
-  </aside>
-</div>
+      <div class="comment-block">
+        <label id="active-image-label">Bildkommentar – kein Bild ausgewählt</label>
+        <textarea id="image-comment" placeholder="Bild anklicken, um hier einen Kommentar zu hinterlassen..." disabled></textarea>
+      </div>
+
+      <button id="submit-btn" type="button" disabled>Bewertung abschließen</button>
+      <p id="status-msg" class="status" role="status"></p>
+    </aside>
+  </div>
 </div>
 
 <div id="lightbox" class="lightbox hidden">

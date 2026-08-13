@@ -1,11 +1,13 @@
 // Rangreihenverfahren – Mini-Anwendung
-// Bilder unten (Pool) per Drag & Drop oben in eine eindeutige Reihenfolge
-// bringen. Kommentare pro Bild und allgemein rechts. Vergroesserung ueber
-// die Lupe an jeder Bildkarte. Alle 36 verfuegbaren Bilder sind auf 3 Level
-// zu je 12 Bildern aufgeteilt (siehe README fuer die Aufteilungsmethode).
+// Bilder im Pool per Klick auswaehlen, dann per Klick auf die Zielposition
+// in der Rangreihe ablegen (Rang 1 = einfach, Rang 12 = komplex, siehe
+// Farbverlauf/Legende). Kommentare pro Bild und allgemein rechts.
+// Vergroesserung ueber die Lupe an jeder Bildkarte. Alle 36 verfuegbaren
+// Bilder sind auf 3 Level zu je 12 Bildern aufgeteilt (siehe README fuer
+// die Aufteilungsmethode).
 
-// JPEG-Dateigroessen (Byte) aus bildpool.csv, fuer den Export als
-// Vergleichswert zur Rangreihe (Komplexitaets-Proxy, siehe README).
+// JPEG-Dateigroessen (Byte) aus bildpool.csv, werden mit an die
+// Google-Tabelle uebermittelt als Vergleichswert zur Rangreihe.
 const IMAGE_JPEG_SIZES = {
   IMG_00001: 190644, IMG_00002: 106114, IMG_00003: 150812, IMG_00004: 108444,
   IMG_00005: 140699, IMG_00006: 154543, IMG_00007: 128484, IMG_00008: 130472,
@@ -34,19 +36,19 @@ const LEVELS = [
 
 // URL der deployten Google-Apps-Script-Web-App (siehe README, Abschnitt
 // "Zentrale Speicherung"). Leer = Dummy-Modus, Ergebnisse werden nur in die
-// Konsole geloggt statt zentral gespeichert -- CSV-Download passiert in
-// beiden Faellen zusaetzlich.
+// Konsole geloggt statt zentral gespeichert.
 const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbzihufA6kTn-kea5re-lGZUbtvg_IjZ7N5LsuGHzbCjMje4T0O29FHjsdbH_vfttf1u/exec";
 
 const levelStates = LEVELS.map(() => ({
-  order: [],            // Bild-IDs in Rangfolge (Index 0 = Rang 1)
+  order: [],            // Bild-IDs in Rangfolge (Index 0 = Rang 1 = einfach)
   comments: {},          // Bild-ID -> Kommentartext
   generalComment: "",
   completed: false,
 }));
 
 let currentLevel = 0;
-let activeImageId = null;
+let activeImageId = null;   // fuer welches Bild der Kommentar-Bereich rechts gilt
+let selectedCard = null;    // aktuell "aufgenommene" Karte fuer die Platzierung
 
 const levelBar = document.getElementById("level-bar");
 const poolTrack = document.getElementById("pool-track");
@@ -91,6 +93,7 @@ function loadLevelIntoDom(index) {
 
   poolTrack.innerHTML = "";
   rankingTrack.innerHTML = "";
+  selectedCard = null;
 
   const unranked = images.filter((id) => !levelState.order.includes(id));
   levelState.order.forEach((id) => rankingTrack.appendChild(createCard(id)));
@@ -105,14 +108,14 @@ function loadLevelIntoDom(index) {
 
   updateRankBadges();
   updateSubmitState();
+  updatePlacingState();
 }
 
-// --- Bildkarten & Drag & Drop -----------------------------------------------
+// --- Bildkarten ----------------------------------------------------------
 
 function createCard(id) {
   const card = document.createElement("div");
   card.className = "card";
-  card.draggable = true;
   card.dataset.id = id;
   if (levelStates[currentLevel].comments[id]?.trim()) card.classList.add("commented");
   card.innerHTML = `
@@ -120,75 +123,94 @@ function createCard(id) {
     <img src="images/${id}.jpg" alt="Satellitenbild ${id}" loading="lazy">
     <button type="button" class="zoom-btn" title="Vergrößern">🔍</button>
   `;
-
-  card.addEventListener("dragstart", onDragStart);
-  card.addEventListener("dragend", onDragEnd);
-  card.addEventListener("click", (e) => {
-    if (e.target.closest(".zoom-btn")) {
-      openLightbox(id);
-      return;
-    }
-    selectImageForComment(id);
-  });
-
+  card.addEventListener("click", onCardClick);
   return card;
 }
 
-function onDragStart(e) {
-  e.currentTarget.classList.add("dragging");
-  e.dataTransfer.effectAllowed = "move";
-  e.dataTransfer.setData("text/plain", e.currentTarget.dataset.id);
+// --- Klick-Auswahl-Klick-Platzieren (ersetzt Drag & Drop) -------------------
+//
+// 1. Bild anklicken -> wird "aufgenommen" (blaue Umrandung), gleichzeitig als
+//    aktives Bild fuer den Kommentar-Bereich rechts gesetzt.
+// 2. Erneuter Klick auf dieselbe Karte -> Aufnahme abbrechen (Kommentarfeld
+//    bleibt wie gewaehlt bestehen).
+// 3. Bei aktiver Aufnahme: Klick auf eine andere Position in der Rangreihe
+//    (obere/untere Haelfte einer Karte oder freie Flaeche darunter) legt das
+//    aufgenommene Bild dort ab. Klick auf eine andere Pool-Karte waehlt
+//    stattdessen diese neu aus. Klick auf freie Pool-Flaeche legt ein aus
+//    der Rangreihe aufgenommenes Bild zurueck in den Pool.
+
+function onCardClick(e) {
+  if (e.target.closest(".zoom-btn")) {
+    e.stopPropagation();
+    openLightbox(e.currentTarget.dataset.id);
+    return;
+  }
+
+  const card = e.currentTarget;
+  const inRanking = card.parentElement === rankingTrack;
+
+  if (card === selectedCard) {
+    clearSelection();
+    return;
+  }
+
+  if (selectedCard) {
+    if (inRanking) {
+      placeSelectedRelativeTo(card, e.clientY);
+    } else {
+      selectCard(card);
+    }
+    return;
+  }
+
+  selectCard(card);
 }
 
-function onDragEnd(e) {
-  e.currentTarget.classList.remove("dragging");
-  document.querySelectorAll(".track").forEach((t) => t.classList.remove("drag-over"));
+rankingTrack.addEventListener("click", (e) => {
+  if (e.target !== rankingTrack || !selectedCard) return;
+  rankingTrack.appendChild(selectedCard);
+  clearSelection();
+  afterOrderChange();
+});
+
+poolTrack.addEventListener("click", (e) => {
+  if (e.target !== poolTrack || !selectedCard) return;
+  poolTrack.appendChild(selectedCard);
+  clearSelection();
+  afterOrderChange();
+});
+
+function placeSelectedRelativeTo(targetCard, clientY) {
+  const rect = targetCard.getBoundingClientRect();
+  const before = clientY - rect.top < rect.height / 2;
+  rankingTrack.insertBefore(selectedCard, before ? targetCard : targetCard.nextSibling);
+  clearSelection();
+  afterOrderChange();
+}
+
+function selectCard(card) {
+  if (selectedCard) selectedCard.classList.remove("selected");
+  selectedCard = card;
+  card.classList.add("selected");
+  updatePlacingState();
+  selectImageForComment(card.dataset.id);
+}
+
+function clearSelection() {
+  if (selectedCard) selectedCard.classList.remove("selected");
+  selectedCard = null;
+  updatePlacingState();
+}
+
+function updatePlacingState() {
+  rankingTrack.classList.toggle("placing", !!selectedCard);
+  poolTrack.classList.toggle("placing", !!selectedCard);
+}
+
+function afterOrderChange() {
   updateRankBadges();
   updateSubmitState();
 }
-
-function getDragAfterElement(container, x, y, vertical) {
-  const cards = [...container.querySelectorAll(".card:not(.dragging)")];
-  return cards.reduce(
-    (closest, child) => {
-      const box = child.getBoundingClientRect();
-      const offset = vertical
-        ? y - box.top - box.height / 2
-        : x - box.left - box.width / 2;
-      if (offset < 0 && offset > closest.offset) {
-        return { offset, element: child };
-      }
-      return closest;
-    },
-    { offset: Number.NEGATIVE_INFINITY, element: null }
-  ).element;
-}
-
-[rankingTrack, poolTrack].forEach((track) => {
-  const vertical = track === rankingTrack;
-  track.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    track.classList.add("drag-over");
-    const dragging = document.querySelector(".dragging");
-    if (!dragging) return;
-    const afterEl = getDragAfterElement(track, e.clientX, e.clientY, vertical);
-    if (afterEl == null) {
-      track.appendChild(dragging);
-    } else {
-      track.insertBefore(dragging, afterEl);
-    }
-    updateRankBadges();
-  });
-
-  track.addEventListener("dragleave", (e) => {
-    if (e.target === track) track.classList.remove("drag-over");
-  });
-
-  track.addEventListener("drop", (e) => {
-    e.preventDefault();
-    track.classList.remove("drag-over");
-  });
-});
 
 function updateRankBadges() {
   [...rankingTrack.children].forEach((card, i) => {
@@ -221,14 +243,16 @@ lightbox.addEventListener("click", (e) => {
   if (e.target === lightbox) closeLightbox();
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeLightbox();
+  if (e.key === "Escape") {
+    closeLightbox();
+    clearSelection();
+  }
 });
 
 // --- Kommentare --------------------------------------------------------------
 
 function selectImageForComment(id) {
   activeImageId = id;
-  document.querySelectorAll(".card").forEach((c) => c.classList.toggle("selected", c.dataset.id === id));
   activeLabel.textContent = `Bildkommentar – ${id}`;
   imageCommentField.disabled = false;
   imageCommentField.value = levelStates[currentLevel].comments[id] || "";
@@ -265,71 +289,29 @@ submitBtn.addEventListener("click", async () => {
   statusMsg.textContent = "Wird übermittelt...";
 
   const result = await submitResults(payload);
-  downloadResultsCsv(payload);
   levelState.completed = result.ok;
   renderLevelBar();
 
   if (result.dummy) {
-    statusMsg.textContent = "Danke! (Test-/Platzhaltermodus – keine SUBMIT_URL gesetzt, siehe README) und als CSV heruntergeladen.";
+    statusMsg.textContent = "Danke! (Test-/Platzhaltermodus – keine SUBMIT_URL gesetzt, siehe README).";
   } else if (result.unverified) {
-    statusMsg.textContent = "Danke! Bewertung an die Google-Tabelle gesendet (Übermittlung technisch nicht bestätigbar, siehe README) und zusätzlich als CSV heruntergeladen.";
+    statusMsg.textContent = "Danke! Bewertung an die Google-Tabelle gesendet (Übermittlung technisch nicht bestätigbar, siehe README).";
   } else if (result.ok) {
-    statusMsg.textContent = "Danke! Bewertung an die Google-Tabelle übermittelt und zusätzlich als CSV heruntergeladen.";
+    statusMsg.textContent = "Danke! Bewertung an die Google-Tabelle übermittelt.";
   } else {
-    statusMsg.textContent = "Fehler beim Übermitteln an die Google-Tabelle – CSV wurde trotzdem heruntergeladen.";
+    statusMsg.textContent = "Fehler beim Übermitteln an die Google-Tabelle – bitte erneut versuchen.";
   }
   submitBtn.disabled = false;
 
   console.log("Ergebnis-Payload:", payload);
 });
 
-// --- Ergebnisexport (CSV) -----------------------------------------------
-// Laedt Rangfolge + Dateigroesse + Kommentare als CSV herunter, damit sich
-// Rang und JPEG-Kompressionsgroesse (Komplexitaets-Proxy) direkt
-// gegenueberstellen lassen (z. B. in Excel/Numbers).
-
-function csvEscape(value) {
-  return `"${String(value ?? "").replace(/"/g, '""')}"`;
-}
-
-function buildResultsCsv(payload) {
-  const header = ["rank", "image_id", "jpeg_filesize_bytes", "comment"].join(",");
-  const rows = payload.order.map((id, i) => {
-    const rank = i + 1;
-    const size = IMAGE_JPEG_SIZES[id] ?? "";
-    const comment = csvEscape(payload.imageComments[id] || "");
-    return [rank, id, size, comment].join(",");
-  });
-  const meta = [
-    "",
-    `level,${payload.level}`,
-    `session_id,${payload.sessionId}`,
-    `timestamp,${payload.timestamp}`,
-    `general_comment,${csvEscape(payload.generalComment)}`,
-  ];
-  return [header, ...rows, ...meta].join("\n");
-}
-
-function downloadResultsCsv(payload) {
-  const csv = buildResultsCsv(payload);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `rangreihe_ergebnis_level${payload.level}_${payload.sessionId}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
 // ------------------------------------------------------------------------
 // Sendet an die Google-Apps-Script-Web-App (siehe README, Abschnitt
 // "Zentrale Speicherung" + apps-script/Code.gs), die jedes Bild der
 // Rangfolge als eigene Zeile in eine Google-Tabelle schreibt. Solange
 // SUBMIT_URL leer ist (noch nicht deployt), faellt dies auf ein Dummy
-// zurueck, das nur in die Konsole loggt -- der CSV-Download passiert davon
-// unabhaengig in jedem Fall (siehe submitBtn-Handler oben).
+// zurueck, das nur in die Konsole loggt.
 //
 // Content-Type bewusst auf dem fetch()-Default (text/plain) belassen: ein
 // expliziter "application/json"-Header wuerde einen CORS-Preflight

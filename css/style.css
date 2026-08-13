@@ -13,15 +13,21 @@ body {
   height: 100vh;
 }
 
-.level-bar {
+/* --- Topbar: Level-Auswahl + Legende (ersetzt die frueheren Spalten-Ueberschriften) --- */
+
+.topbar {
   flex: 0 0 auto;
   display: flex;
-  gap: 8px;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 24px;
   padding: 10px 20px;
   background: #fff;
   border-bottom: 1px solid #d8dadf;
 }
+
+.level-bar { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .level-btn {
   padding: 8px 16px;
@@ -39,11 +45,36 @@ body {
   color: #fff;
 }
 
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: #555;
+  white-space: nowrap;
+}
+
+.legend-text { color: #666; }
+
+.legend-tag { font-weight: 700; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.legend-tag--easy { color: #15803d; }
+.legend-tag--hard { color: #b91c1c; }
+
+.legend-gradient {
+  width: 90px;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(to right, hsl(142, 60%, 42%), hsl(0, 70%, 50%));
+  flex: 0 0 auto;
+}
+
+/* --- Hauptlayout: 3 Spalten, volle Resthoehe --- */
+
 .layout {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 240px 1fr 340px;
+  grid-template-columns: 230px 1fr 340px;
   grid-template-rows: 1fr;
   grid-template-areas: "ranking pool comments";
   gap: 1px;
@@ -52,60 +83,55 @@ body {
 
 .ranking-zone, .pool-zone, .comments-zone {
   background: #fff;
-  padding: 16px 20px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.ranking-zone { grid-area: ranking; }
-.pool-zone { grid-area: pool; }
-.comments-zone { grid-area: comments; gap: 16px; overflow: auto; }
+.ranking-zone { grid-area: ranking; padding: 10px; }
+.pool-zone { grid-area: pool; padding: 14px; }
+.comments-zone { grid-area: comments; padding: 16px 20px; gap: 16px; overflow: auto; }
 
 h2 { margin: 0 0 12px; font-size: 1.05rem; }
-.hint { display: block; font-weight: 400; font-size: 0.82rem; color: #666; margin-top: 2px; }
 
 .track {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  min-height: 170px;
-  padding: 10px;
-  border: 2px dashed #c7c9ce;
-  border-radius: 8px;
-  transition: border-color 0.15s ease;
-  overflow-y: auto;
   flex: 1;
+  overflow-y: auto;
+  border-radius: 8px;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.ranking-zone .track {
+.track--ranking {
+  display: flex;
   flex-direction: column;
-  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 4px;
 }
 
-.pool-zone .track {
+.track--pool {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   align-content: flex-start;
+  gap: 16px;
+  padding: 4px;
 }
 
-.track.drag-over { border-color: #2563eb; }
+.track.placing {
+  background-color: #eff6ff;
+  box-shadow: inset 0 0 0 2px #93c5fd;
+}
+
+/* --- Bildkarten (gemeinsame Basis, kontextabhaengig ueberschrieben) --- */
 
 .card {
   position: relative;
-  width: 140px;
-  flex: 0 0 auto;
   background: #fafafa;
   border: 1px solid #d8dadf;
   border-radius: 6px;
   padding: 6px;
-  cursor: grab;
+  cursor: pointer;
   user-select: none;
 }
-
-.ranking-zone .card { width: 100%; }
-
-.card:active { cursor: grabbing; }
-.card.dragging { opacity: 0.35; }
 
 .card img {
   width: 100%;
@@ -114,6 +140,11 @@ h2 { margin: 0 0 12px; font-size: 1.05rem; }
   display: block;
   border-radius: 4px;
   pointer-events: none;
+}
+
+.card.selected {
+  outline: 3px solid #2563eb;
+  outline-offset: -1px;
 }
 
 .rank-badge:empty { display: none; }
@@ -159,7 +190,74 @@ h2 { margin: 0 0 12px; font-size: 1.05rem; }
   padding: 3px 6px;
 }
 
-.card.selected { outline: 2px solid #2563eb; }
+/* --- Ranking-Kontext: kompakte horizontale Zeilen statt Quadrate --- */
+
+.ranking-zone .card {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 4px;
+  border-left-width: 4px;
+  flex: 0 0 auto;
+}
+
+.ranking-zone .card img {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+}
+
+.ranking-zone .rank-badge {
+  position: static;
+  width: 22px;
+  height: 22px;
+  font-size: 0.72rem;
+  box-shadow: none;
+  flex: 0 0 auto;
+}
+
+.ranking-zone .card.commented::after {
+  position: static;
+  flex: 0 0 auto;
+  margin-left: -2px;
+}
+
+.ranking-zone .zoom-btn {
+  position: static;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* Farbverlauf grün (Rang 1, einfach) -> rot (Rang 12, komplex), je Position */
+.ranking-zone .card:nth-child(1)  { border-left-color: hsl(142, 55%, 42%); }
+.ranking-zone .card:nth-child(2)  { border-left-color: hsl(129, 55%, 42%); }
+.ranking-zone .card:nth-child(3)  { border-left-color: hsl(116, 55%, 42%); }
+.ranking-zone .card:nth-child(4)  { border-left-color: hsl(103, 55%, 42%); }
+.ranking-zone .card:nth-child(5)  { border-left-color: hsl(90, 55%, 43%); }
+.ranking-zone .card:nth-child(6)  { border-left-color: hsl(77, 60%, 43%); }
+.ranking-zone .card:nth-child(7)  { border-left-color: hsl(65, 65%, 45%); }
+.ranking-zone .card:nth-child(8)  { border-left-color: hsl(52, 70%, 47%); }
+.ranking-zone .card:nth-child(9)  { border-left-color: hsl(39, 75%, 48%); }
+.ranking-zone .card:nth-child(10) { border-left-color: hsl(26, 75%, 48%); }
+.ranking-zone .card:nth-child(11) { border-left-color: hsl(13, 72%, 49%); }
+.ranking-zone .card:nth-child(12) { border-left-color: hsl(0, 70%, 50%); }
+
+.ranking-zone .card:nth-child(1)  .rank-badge { background: hsl(142, 55%, 42%); }
+.ranking-zone .card:nth-child(2)  .rank-badge { background: hsl(129, 55%, 42%); }
+.ranking-zone .card:nth-child(3)  .rank-badge { background: hsl(116, 55%, 42%); }
+.ranking-zone .card:nth-child(4)  .rank-badge { background: hsl(103, 55%, 42%); }
+.ranking-zone .card:nth-child(5)  .rank-badge { background: hsl(90, 55%, 43%); }
+.ranking-zone .card:nth-child(6)  .rank-badge { background: hsl(77, 60%, 43%); }
+.ranking-zone .card:nth-child(7)  .rank-badge { background: hsl(65, 65%, 45%); }
+.ranking-zone .card:nth-child(8)  .rank-badge { background: hsl(52, 70%, 47%); }
+.ranking-zone .card:nth-child(9)  .rank-badge { background: hsl(39, 75%, 48%); }
+.ranking-zone .card:nth-child(10) .rank-badge { background: hsl(26, 75%, 48%); }
+.ranking-zone .card:nth-child(11) .rank-badge { background: hsl(13, 72%, 49%); }
+.ranking-zone .card:nth-child(12) .rank-badge { background: hsl(0, 70%, 50%); }
+
+/* --- Kommentare / Formular --- */
 
 .comments-zone textarea {
   width: 100%;
@@ -220,8 +318,6 @@ h2 { margin: 0 0 12px; font-size: 1.05rem; }
 
 @media (max-width: 900px) {
   .page { height: auto; min-height: 100vh; }
-
-  .level-bar { flex-wrap: wrap; }
 
   .layout {
     grid-template-columns: 1fr;

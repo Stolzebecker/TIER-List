@@ -4,11 +4,13 @@ Kleine Web-Anwendung für das Rangreihenverfahren (Tier-List-Übung) im Rahmen
 der Experteninterviews/Pilotphase von Julian Stolz' Promotion (PH Heidelberg,
 visuelle Komplexität von Fernerkundungsbildern).
 
-Probandinnen und Probanden ziehen pro Level 12 Satellitenbilder per Drag &
-Drop von der Bilder-Ablage (Mitte) in eine eindeutige Rangfolge (links,
-vertikal, Rang 1 = oben). Jedes Bild lässt sich über die Lupe vergrößern.
-Rechts können ein allgemeiner Kommentar sowie ein Kommentar pro
-ausgewähltem Bild hinterlegt werden.
+Probandinnen und Probanden wählen pro Level ein Bild aus der Bilder-Ablage
+(Mitte) per Klick aus und legen es per zweitem Klick auf der Zielposition in
+der Rangreihe (links, vertikal) ab — Rang 1 oben = am wenigsten komplex,
+Rang 12 unten = am komplexesten, farblich von Grün nach Rot codiert (Legende
+oben). Jedes Bild lässt sich über die Lupe vergrößern. Rechts können ein
+allgemeiner Kommentar sowie ein Kommentar pro ausgewähltem Bild hinterlegt
+werden.
 
 ## Level & Bildauswahl
 
@@ -25,20 +27,15 @@ Zuordnung steht in `js/app.js` (Konstante `LEVELS`).
 
 Die Seite ist eine rein statische Anwendung (HTML/CSS/JS, kein Build-Schritt)
 für GitHub Pages und hat **keinen eigenen Server**. Beim Abschluss einer
-Bewertung (pro Level) passiert zweierlei:
-
-1. **Übermittlung an eine zentrale Google-Tabelle** über eine Google-Apps-
-   Script-Web-App (`apps-script/Code.gs`, siehe Einrichtung unten) — jedes
-   Bild der Rangfolge landet als eigene Zeile (Rang, Bild-ID, JPEG-
-   Dateigröße, Kommentar, Level, Session-ID, Zeitstempel, allgemeiner
-   Kommentar) in einem Sheet, das nur du siehst. Solange die Web-App-URL
-   noch nicht eingetragen ist (`SUBMIT_URL` in `js/app.js`), läuft das im
-   Dummy-Modus: nur Konsolen-Log, keine echte Übermittlung. Ist die URL
-   gesetzt, aktuell bereits der Fall (siehe Einrichtung unten für die
-   verwendete Tabelle/das Script).
-2. Zusätzlich immer ein **automatischer CSV-Download** (`downloadResultsCsv()`)
-   mit denselben Daten für den lokalen Schnellblick — unabhängig davon, ob
-   die Google-Tabelle erreichbar ist.
+Bewertung (pro Level) erfolgt die **Übermittlung an eine zentrale
+Google-Tabelle** über eine Google-Apps-Script-Web-App (`apps-script/Code.gs`,
+siehe Einrichtung unten) — jedes Bild der Rangfolge landet als eigene Zeile
+(Rang, Bild-ID, JPEG-Dateigröße, Kommentar, Level, Session-ID, Zeitstempel,
+allgemeiner Kommentar) in einem Sheet, das nur du siehst. Solange die
+Web-App-URL noch nicht eingetragen ist (`SUBMIT_URL` in `js/app.js`), läuft
+das im Dummy-Modus: nur Konsolen-Log, keine echte Übermittlung. Ist die URL
+gesetzt, aktuell bereits der Fall (siehe Einrichtung unten für die
+verwendete Tabelle/das Script).
 
 **Bekannte Einschränkung (CORS):** Apps-Script-Web-Apps senden keinen
 `Access-Control-Allow-Origin`-Header, ein regulärer `fetch()` von
