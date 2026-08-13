@@ -94,6 +94,9 @@ const imageCommentField = document.getElementById("image-comment");
 const generalCommentField = document.getElementById("general-comment");
 const lightbox = document.getElementById("lightbox");
 const lightboxImg = document.getElementById("lightbox-img");
+const completionScreen = document.getElementById("completion-screen");
+const tutorialModal = document.getElementById("tutorial-modal");
+const tutorialModalVideo = document.getElementById("tutorial-modal-video");
 
 // --- Tutorial vor Level 1 -----------------------------------------------------
 
@@ -157,7 +160,7 @@ function loadCurrentIntoDom() {
   imageCommentField.disabled = true;
   imageCommentField.value = "";
   generalCommentField.value = state.generalComment;
-  statusMsg.textContent = "";
+  statusMsg.textContent = state.completed ? "Diese Bewertung wurde bereits übermittelt." : "";
 
   updateRankBadges();
   updateSubmitState();
@@ -203,11 +206,19 @@ function onCardClick(e) {
   const card = e.currentTarget;
 
   if (card === selectedCard) {
+    e.stopPropagation();
     clearSelection();
     return;
   }
 
   if (!selectedCard) {
+    // Aufnehmen einer Karte ist hier bereits vollstaendig behandelt -- die
+    // Klick-Handler von rankingTrack/poolTrack duerfen NICHT nochmal auf
+    // denselben (bubbelnden) Klick reagieren, sonst wuerde eine gerade erst
+    // aufgenommene Ranking-Karte im selben Klick sofort wieder abgelegt und
+    // die Auswahl direkt danach geloescht (Bug: Reihenfolge liess sich nach
+    // dem ersten Einsortieren nicht mehr aendern).
+    e.stopPropagation();
     selectCard(card);
     return;
   }
@@ -215,6 +226,7 @@ function onCardClick(e) {
   const inRanking = card.parentElement === rankingTrack;
   if (!inRanking) {
     // Klick auf eine andere Pool-Karte waehrend etwas ausgewaehlt ist -> Neuauswahl.
+    e.stopPropagation();
     selectCard(card);
     return;
   }
@@ -300,7 +312,10 @@ function updateRankBadges() {
 }
 
 function updateSubmitState() {
-  submitBtn.disabled = rankingTrack.children.length !== currentImages().length;
+  // Einmal erfolgreich uebermittelte Levels bleiben dauerhaft gesperrt (auch
+  // nach einem Levelwechsel und zurueck) -- verhindert Mehrfach-Zeilen im
+  // Google Sheet durch mehrfaches Klicken/erneutes Absenden.
+  submitBtn.disabled = currentState().completed || rankingTrack.children.length !== currentImages().length;
 }
 
 // --- Lightbox / Vergroesserung ---------------------------------------------
@@ -316,6 +331,30 @@ function closeLightbox() {
   lightboxImg.src = "";
 }
 
+// --- Abschluss-Popup nach allen 3 Leveln --------------------------------------
+
+function showCompletionScreen() {
+  completionScreen.classList.remove("hidden");
+}
+
+document.getElementById("completion-close-btn").addEventListener("click", () => {
+  completionScreen.classList.add("hidden");
+});
+
+// --- Tutorial-Video: jederzeit ueber den Button in der Topleiste erneut
+// aufrufbar, waehrend der eigentlichen Aufgabe (Uebung wie echte Level) ---
+
+document.getElementById("tutorial-open-btn").addEventListener("click", () => {
+  tutorialModal.classList.remove("hidden");
+  tutorialModalVideo.currentTime = 0;
+  tutorialModalVideo.play();
+});
+
+document.getElementById("tutorial-close-btn").addEventListener("click", () => {
+  tutorialModal.classList.add("hidden");
+  tutorialModalVideo.pause();
+});
+
 document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
 lightbox.addEventListener("click", (e) => {
   if (e.target === lightbox) closeLightbox();
@@ -324,6 +363,10 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     closeLightbox();
     clearSelection();
+    if (!tutorialModal.classList.contains("hidden")) {
+      tutorialModal.classList.add("hidden");
+      tutorialModalVideo.pause();
+    }
   }
 });
 
@@ -381,7 +424,10 @@ submitBtn.addEventListener("click", async () => {
   } else {
     statusMsg.textContent = "Fehler beim Übermitteln an die Google-Tabelle – bitte erneut versuchen.";
   }
-  submitBtn.disabled = false;
+  // Statt pauschal wieder freizugeben: bei Erfolg bleibt der Button ueber
+  // state.completed dauerhaft gesperrt (siehe updateSubmitState), bei einem
+  // Fehler wird er wieder klickbar, damit ein erneuter Versuch moeglich ist.
+  updateSubmitState();
 
   console.log("Ergebnis-Payload:", payload);
 
@@ -394,6 +440,10 @@ submitBtn.addEventListener("click", async () => {
   }
 
   renderLevelBar();
+
+  if (result.ok && levelStates.every((s) => s.completed)) {
+    showCompletionScreen();
+  }
 });
 
 // ------------------------------------------------------------------------

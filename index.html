@@ -21,6 +21,10 @@
 
     <p>Danach geht es mit den eigentlichen Satellitenbildern los.</p>
 
+    <p>Das folgende kurze Video zeigt, wie die Bedienung funktioniert: Bilder auswählen und ablegen, die Reihenfolge nachträglich ändern, ein Bild vergrößert ansehen, die Spaltenbreiten anpassen, eine Bewertung abschließen und zwischen den Leveln wechseln. Sie können es sich später jederzeit über den Button „Tutorial" oben in der Leiste erneut ansehen.</p>
+
+    <video class="tutorial-video" src="video/tutorial.mp4" controls muted playsinline preload="metadata"></video>
+
     <button id="intro-continue-btn" type="button">Weiter zur Übung</button>
   </div>
 </div>
@@ -34,6 +38,7 @@
       <span class="legend-gradient" aria-hidden="true"></span>
       <span id="legend-tag-hard" class="legend-tag legend-tag--hard">komplex</span>
     </div>
+    <button id="tutorial-open-btn" type="button" class="tutorial-open-btn">▶ Tutorial</button>
   </header>
 
   <div class="layout">
@@ -74,6 +79,22 @@
 <div id="lightbox" class="lightbox hidden">
   <img id="lightbox-img" src="" alt="">
   <button id="lightbox-close" type="button" aria-label="Schließen">&times;</button>
+</div>
+
+<div id="completion-screen" class="onboarding-screen completion-overlay hidden">
+  <div class="onboarding-card">
+    <h1>Vielen Dank für die Teilnahme!</h1>
+    <p>Sie haben alle drei Level erfolgreich abgeschlossen. Ihre Bewertungen wurden übermittelt.</p>
+    <button id="completion-close-btn" type="button">Schließen</button>
+  </div>
+</div>
+
+<div id="tutorial-modal" class="onboarding-screen completion-overlay hidden">
+  <div class="onboarding-card tutorial-modal-card">
+    <h1>Tutorial</h1>
+    <video id="tutorial-modal-video" class="tutorial-video" src="video/tutorial.mp4" controls playsinline></video>
+    <button id="tutorial-close-btn" type="button">Schließen</button>
+  </div>
 </div>
 
 <script src="js/app.js"></script>

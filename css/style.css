@@ -55,6 +55,50 @@ body {
   cursor: pointer;
 }
 
+/* --- Abschluss-Popup nach allen 3 Leveln: als Overlay UEBER der laufenden
+   Anwendung (anders als der Intro-Screen, der die ganze Seite ersetzt) --- */
+
+.completion-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 60;
+  overflow: auto;
+  padding: 32px 20px;
+}
+
+/* --- Tutorial-Video (Intro-Screen + jederzeit erneut aufrufbares Popup) --- */
+
+.tutorial-video {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  margin: 16px 0;
+  border-radius: 8px;
+  border: 1px solid #d8dadf;
+  background: #000;
+}
+
+.tutorial-modal-card {
+  max-width: 700px;
+}
+
+.tutorial-open-btn {
+  padding: 6px 14px;
+  border: 1px solid #2563eb;
+  background: #fff;
+  color: #2563eb;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tutorial-open-btn:hover {
+  background: #eff6ff;
+}
+
 /* --- Tutorial-Modus: Kommentarfelder ausgeblendet (im Tutorial nicht
    relevant, nichts wird uebermittelt), Spalte selbst bleibt sichtbar, da
    sie auch den "Weiter"-Button/Status enthaelt. --- */
