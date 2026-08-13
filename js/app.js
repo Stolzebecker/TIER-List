@@ -51,6 +51,15 @@ const levelStates = LEVELS.map(() => ({
 // images/tutorial/. Rein zum Vertrautmachen mit der Sortier-Mechanik und der
 // Kernbotschaft "komplex != viel" -- keine Musterloesung, keine Uebermittlung.
 const TUTORIAL_IMAGES = ["T1A", "T1B", "T1C", "T2A", "T2B", "T2C", "T3A", "T3B", "T3C"];
+
+// JPEG-Dateigroessen (Byte) der Tutorial-Bilder, analog zu IMAGE_JPEG_SIZES
+// oben -- auch hier soll der Kompressionsgroessen-Ansatz als Vergleichswert
+// zur Rangfolge nutzbar sein.
+const TUTORIAL_JPEG_SIZES = {
+  T1A: 13375, T1B: 15760, T1C: 30950,
+  T2A: 18192, T2B: 21081, T2C: 38038,
+  T3A: 42744, T3B: 56067, T3C: 70343,
+};
 const tutorialState = { order: [], comments: {}, generalComment: "", completed: false };
 let tutorialMode = true;
 
@@ -418,9 +427,12 @@ async function submitResults(payload) {
     return { ok: true, dummy: true };
   }
 
+  // Tutorial- und echte Level-Bilder liegen in getrennten Groessen-Tabellen
+  // (verschiedene ID-Namensraeume), daher Auswahl anhand des Levels im Payload.
+  const sizeTable = payload.level === "tutorial" ? TUTORIAL_JPEG_SIZES : IMAGE_JPEG_SIZES;
   const enrichedPayload = {
     ...payload,
-    imageSizes: Object.fromEntries(payload.order.map((id) => [id, IMAGE_JPEG_SIZES[id] ?? null])),
+    imageSizes: Object.fromEntries(payload.order.map((id) => [id, sizeTable[id] ?? null])),
   };
 
   try {
