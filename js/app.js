@@ -147,28 +147,40 @@ function onCardClick(e) {
   }
 
   const card = e.currentTarget;
-  const inRanking = card.parentElement === rankingTrack;
 
   if (card === selectedCard) {
     clearSelection();
     return;
   }
 
-  if (selectedCard) {
-    if (inRanking) {
-      placeSelectedRelativeTo(card, e.clientY);
-    } else {
-      selectCard(card);
-    }
+  if (!selectedCard) {
+    selectCard(card);
     return;
   }
 
-  selectCard(card);
+  const inRanking = card.parentElement === rankingTrack;
+  if (!inRanking) {
+    // Klick auf eine andere Pool-Karte waehrend etwas ausgewaehlt ist -> Neuauswahl.
+    selectCard(card);
+    return;
+  }
+
+  // Klick auf eine andere Ranking-Karte waehrend etwas ausgewaehlt ist: hier
+  // NICHT platzieren (welche Kartenhaelfte getroffen wurde ist unzuverlaessig,
+  // v. a. bei kleinen kompakten Zeilen). Stattdessen an den Track-weiten
+  // Click-Handler unten durchreichen (bubble), der die exakte Position anhand
+  // der Y-Koordinate relativ zu ALLEN Karten berechnet -- unabhaengig davon,
+  // ob genau eine Karte oder die Luecke zwischen zwei Karten getroffen wurde.
 }
 
 rankingTrack.addEventListener("click", (e) => {
-  if (e.target !== rankingTrack || !selectedCard) return;
-  rankingTrack.appendChild(selectedCard);
+  if (!selectedCard) return;
+  const target = getInsertionTarget(rankingTrack, e.clientY);
+  if (target) {
+    rankingTrack.insertBefore(selectedCard, target);
+  } else {
+    rankingTrack.appendChild(selectedCard);
+  }
   clearSelection();
   afterOrderChange();
 });
@@ -180,12 +192,24 @@ poolTrack.addEventListener("click", (e) => {
   afterOrderChange();
 });
 
-function placeSelectedRelativeTo(targetCard, clientY) {
-  const rect = targetCard.getBoundingClientRect();
-  const before = clientY - rect.top < rect.height / 2;
-  rankingTrack.insertBefore(selectedCard, before ? targetCard : targetCard.nextSibling);
-  clearSelection();
-  afterOrderChange();
+// Ermittelt, VOR welcher Karte die ausgewaehlte Karte eingefuegt werden soll,
+// anhand der vertikalen Mausposition relativ zur Bildschirmmitte jeder
+// bestehenden Karte (die ausgewaehlte Karte selbst wird ausgeklammert).
+// Rueckgabe null bedeutet "ans Ende anhaengen" (Klick unterhalb der letzten
+// Karte bzw. keine Karten vorhanden).
+function getInsertionTarget(container, clientY) {
+  const cards = [...container.querySelectorAll(".card")].filter((c) => c !== selectedCard);
+  return cards.reduce(
+    (closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = clientY - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { offset, element: child };
+      }
+      return closest;
+    },
+    { offset: Number.NEGATIVE_INFINITY, element: null }
+  ).element;
 }
 
 function selectCard(card) {
