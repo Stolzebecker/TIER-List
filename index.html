@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Rangreihenverfahren – Fernerkundungsbilder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="layout">
+  <header class="ranking-zone">
+    <h2>Rangreihenfolge <span class="hint">Bilder hierher ziehen, links = Rang 1</span></h2>
+    <div id="ranking-track" class="track" data-zone="ranking"></div>
+  </header>
+
+  <main class="pool-zone">
+    <h2>Bilder <span class="hint">zum Vergrößern auf die Lupe klicken</span></h2>
+    <div id="pool-track" class="track" data-zone="pool"></div>
+  </main>
+
+  <aside class="comments-zone">
+    <h2>Kommentare</h2>
+
+    <div class="comment-block">
+      <label for="general-comment">Allgemeiner Kommentar</label>
+      <textarea id="general-comment" placeholder="Anmerkungen zur gesamten Rangreihe..."></textarea>
+    </div>
+
+    <div class="comment-block">
+      <label id="active-image-label">Bildkommentar – kein Bild ausgewählt</label>
+      <textarea id="image-comment" placeholder="Bild anklicken, um hier einen Kommentar zu hinterlassen..." disabled></textarea>
+    </div>
+
+    <button id="submit-btn" type="button" disabled>Bewertung abschließen</button>
+    <p id="status-msg" class="status" role="status"></p>
+  </aside>
+</div>
+
+<div id="lightbox" class="lightbox hidden">
+  <img id="lightbox-img" src="" alt="">
+  <button id="lightbox-close" type="button" aria-label="Schließen">&times;</button>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
