@@ -7,14 +7,32 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="page">
+<div id="intro-screen" class="onboarding-screen">
+  <div class="onboarding-card">
+    <h1>Bevor es losgeht</h1>
+
+    <p>Zwei Fotos können dasselbe Motiv zeigen und trotzdem unterschiedlich schnell zu erfassen sein.</p>
+
+    <p>In dieser Studie geht es nicht darum, was auf einem Bild zu sehen ist. Es geht vielmehr darum, wie leicht oder schwer es Ihnen fällt, sich in einem Bild zurechtzufinden. Im Mittelpunkt steht dabei die visuelle Komplexität eines Bildes. Dabei spielt es keine Rolle, ob Sie einen Wald, eine Stadt oder ein Gewässer sehen.</p>
+
+    <p>Wichtig ist: „Komplex" bedeutet nicht automatisch „viel". Auch ein sehr leeres Bild kann schwer zu verstehen sein. Umgekehrt kann ein Bild mit vielen Details durch eine klare Struktur leicht zu erfassen sein. Es geht auch nicht darum, jedes einzelne Detail zu erkennen und zu benennen, etwa „eine Stadt mit 354 Häusern". Entscheidend ist Ihr erster Eindruck: Können Sie das Bild schnell „lesen", zum Beispiel „da ist eine Wiese, da ist ein Berg", oder brauchen Sie länger, um sich darin zu orientieren?</p>
+
+    <p>Zum Einstieg folgt eine kurze Übung mit neun Beispielbildern eines Schreibtisches, noch ganz ohne Satellitenbilder. Ordnen Sie die Bilder danach, wie leicht oder schwer sie für Sie zu erfassen sind. Dabei gibt es keine richtige oder falsche Reihenfolge. Die Übung soll Ihnen lediglich helfen, sich mit der Aufgabe vertraut zu machen.</p>
+
+    <p>Danach geht es mit den eigentlichen Satellitenbildern los.</p>
+
+    <button id="intro-continue-btn" type="button">Weiter zur Übung</button>
+  </div>
+</div>
+
+<div class="page hidden">
   <header class="topbar">
     <nav id="level-bar" class="level-bar" aria-label="Level-Auswahl"></nav>
     <div class="legend">
-      <span class="legend-text">Bild auswählen, dann Zielposition anklicken</span>
-      <span class="legend-tag legend-tag--easy">einfach</span>
+      <span id="legend-text" class="legend-text">Bild auswählen, dann Zielposition anklicken</span>
+      <span id="legend-tag-easy" class="legend-tag legend-tag--easy">einfach</span>
       <span class="legend-gradient" aria-hidden="true"></span>
-      <span class="legend-tag legend-tag--hard">komplex</span>
+      <span id="legend-tag-hard" class="legend-tag legend-tag--hard">komplex</span>
     </div>
   </header>
 

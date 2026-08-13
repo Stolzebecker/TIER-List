@@ -46,11 +46,36 @@ const levelStates = LEVELS.map(() => ({
   completed: false,
 }));
 
+// Tutorial vor Level 1: 9 domaenenfremde Beispielbilder (Schreibtisch-Szenen,
+// 3 Unordnungs-/Informationsdichte-Stufen x 3 Darstellungsstile), liegen in
+// images/tutorial/. Rein zum Vertrautmachen mit der Sortier-Mechanik und der
+// Kernbotschaft "komplex != viel" -- keine Musterloesung, keine Uebermittlung.
+const TUTORIAL_IMAGES = ["T1A", "T1B", "T1C", "T2A", "T2B", "T2C", "T3A", "T3B", "T3C"];
+const tutorialState = { order: [], comments: {}, generalComment: "", completed: false };
+let tutorialMode = true;
+
 let currentLevel = 0;
 let activeImageId = null;   // fuer welches Bild der Kommentar-Bereich rechts gilt
 let selectedCard = null;    // aktuell "aufgenommene" Karte fuer die Platzierung
 
+// Liefert je nach Modus (Tutorial vor Level 1 vs. echtes Level) die aktuell
+// gueltige Bilderliste bzw. den zugehoerigen State/Bildordner -- die
+// eigentliche Sortier-/Klick-Logik weiter unten bleibt dadurch fuer beide
+// Modi identisch, ohne Code zu verdoppeln.
+function currentImages() {
+  return tutorialMode ? TUTORIAL_IMAGES : LEVELS[currentLevel];
+}
+function currentState() {
+  return tutorialMode ? tutorialState : levelStates[currentLevel];
+}
+function imageFolder() {
+  return tutorialMode ? "images/tutorial" : "images";
+}
+
 const levelBar = document.getElementById("level-bar");
+const legendText = document.getElementById("legend-text");
+const legendTagEasy = document.getElementById("legend-tag-easy");
+const legendTagHard = document.getElementById("legend-tag-hard");
 const poolTrack = document.getElementById("pool-track");
 const rankingTrack = document.getElementById("ranking-track");
 const submitBtn = document.getElementById("submit-btn");
@@ -60,6 +85,25 @@ const imageCommentField = document.getElementById("image-comment");
 const generalCommentField = document.getElementById("general-comment");
 const lightbox = document.getElementById("lightbox");
 const lightboxImg = document.getElementById("lightbox-img");
+
+// --- Tutorial vor Level 1 -----------------------------------------------------
+
+function finishTutorial() {
+  tutorialMode = false;
+  document.querySelector(".layout").classList.remove("tutorial-active");
+  levelBar.classList.remove("hidden");
+  legendText.textContent = "Bild auswählen, dann Zielposition anklicken";
+  legendTagEasy.textContent = "einfach";
+  legendTagHard.textContent = "komplex";
+  submitBtn.textContent = "Bewertung abschließen";
+  renderLevelBar();
+  loadCurrentIntoDom();
+}
+
+document.getElementById("intro-continue-btn").addEventListener("click", () => {
+  document.getElementById("intro-screen").classList.add("hidden");
+  document.querySelector(".page").classList.remove("hidden");
+});
 
 // --- Level-Umschaltung -------------------------------------------------------
 
@@ -77,33 +121,33 @@ function renderLevelBar() {
 
 function switchLevel(index) {
   if (index === currentLevel) return;
-  saveDomIntoLevelState(currentLevel);
+  saveDomIntoCurrentState();
   currentLevel = index;
-  loadLevelIntoDom(currentLevel);
+  loadCurrentIntoDom();
   renderLevelBar();
 }
 
-function saveDomIntoLevelState(index) {
-  levelStates[index].order = [...rankingTrack.children].map((c) => c.dataset.id);
+function saveDomIntoCurrentState() {
+  currentState().order = [...rankingTrack.children].map((c) => c.dataset.id);
 }
 
-function loadLevelIntoDom(index) {
-  const levelState = levelStates[index];
-  const images = LEVELS[index];
+function loadCurrentIntoDom() {
+  const state = currentState();
+  const images = currentImages();
 
   poolTrack.innerHTML = "";
   rankingTrack.innerHTML = "";
   selectedCard = null;
 
-  const unranked = images.filter((id) => !levelState.order.includes(id));
-  levelState.order.forEach((id) => rankingTrack.appendChild(createCard(id)));
+  const unranked = images.filter((id) => !state.order.includes(id));
+  state.order.forEach((id) => rankingTrack.appendChild(createCard(id)));
   unranked.forEach((id) => poolTrack.appendChild(createCard(id)));
 
   activeImageId = null;
   activeLabel.textContent = "Bildkommentar – kein Bild ausgewählt";
   imageCommentField.disabled = true;
   imageCommentField.value = "";
-  generalCommentField.value = levelState.generalComment;
+  generalCommentField.value = state.generalComment;
   statusMsg.textContent = "";
 
   updateRankBadges();
@@ -117,10 +161,11 @@ function createCard(id) {
   const card = document.createElement("div");
   card.className = "card";
   card.dataset.id = id;
-  if (levelStates[currentLevel].comments[id]?.trim()) card.classList.add("commented");
+  if (currentState().comments[id]?.trim()) card.classList.add("commented");
+  const altText = tutorialMode ? `Beispielbild ${id}` : `Satellitenbild ${id}`;
   card.innerHTML = `
     <span class="rank-badge"></span>
-    <img src="images/${id}.jpg" alt="Satellitenbild ${id}" loading="lazy">
+    <img src="${imageFolder()}/${id}.jpg" alt="${altText}" loading="lazy">
     <button type="button" class="zoom-btn" title="Vergrößern">🔍</button>
   `;
   card.addEventListener("click", onCardClick);
@@ -246,14 +291,14 @@ function updateRankBadges() {
 }
 
 function updateSubmitState() {
-  submitBtn.disabled = rankingTrack.children.length !== LEVELS[currentLevel].length;
+  submitBtn.disabled = rankingTrack.children.length !== currentImages().length;
 }
 
 // --- Lightbox / Vergroesserung ---------------------------------------------
 
 function openLightbox(id) {
-  lightboxImg.src = `images/${id}.jpg`;
-  lightboxImg.alt = `Vergrößertes Satellitenbild ${id}`;
+  lightboxImg.src = `${imageFolder()}/${id}.jpg`;
+  lightboxImg.alt = tutorialMode ? `Vergrößertes Beispielbild ${id}` : `Vergrößertes Satellitenbild ${id}`;
   lightbox.classList.remove("hidden");
 }
 
@@ -279,42 +324,44 @@ function selectImageForComment(id) {
   activeImageId = id;
   activeLabel.textContent = `Bildkommentar – ${id}`;
   imageCommentField.disabled = false;
-  imageCommentField.value = levelStates[currentLevel].comments[id] || "";
+  imageCommentField.value = currentState().comments[id] || "";
   imageCommentField.focus();
 }
 
 imageCommentField.addEventListener("input", () => {
   if (!activeImageId) return;
-  levelStates[currentLevel].comments[activeImageId] = imageCommentField.value;
+  currentState().comments[activeImageId] = imageCommentField.value;
   const card = document.querySelector(`.card[data-id="${activeImageId}"]`);
   if (card) card.classList.toggle("commented", imageCommentField.value.trim().length > 0);
 });
 
 generalCommentField.addEventListener("input", (e) => {
-  levelStates[currentLevel].generalComment = e.target.value;
+  currentState().generalComment = e.target.value;
 });
 
 // --- Absenden ----------------------------------------------------------------
 
 submitBtn.addEventListener("click", async () => {
-  saveDomIntoLevelState(currentLevel);
-  const levelState = levelStates[currentLevel];
+  saveDomIntoCurrentState();
+  const state = currentState();
 
+  // Tutorial-Rangfolge wird genauso wie ein echtes Level uebermittelt (level:
+  // "tutorial" statt Levelnummer), damit sie sich in der Tabelle unterscheiden
+  // laesst -- Julian moechte auch diese Warmwerd-Rangfolgen als Datenpunkt.
   const payload = {
     sessionId: (crypto.randomUUID && crypto.randomUUID()) || String(Date.now()),
     timestamp: new Date().toISOString(),
-    level: currentLevel + 1,
-    order: levelState.order,
-    imageComments: levelState.comments,
-    generalComment: levelState.generalComment,
+    level: tutorialMode ? "tutorial" : currentLevel + 1,
+    order: state.order,
+    imageComments: state.comments,
+    generalComment: state.generalComment,
   };
 
   submitBtn.disabled = true;
   statusMsg.textContent = "Wird übermittelt...";
 
   const result = await submitResults(payload);
-  levelState.completed = result.ok;
-  renderLevelBar();
+  state.completed = result.ok;
 
   if (result.dummy) {
     statusMsg.textContent = "Danke! (Test-/Platzhaltermodus – keine SUBMIT_URL gesetzt, siehe README).";
@@ -328,6 +375,16 @@ submitBtn.addEventListener("click", async () => {
   submitBtn.disabled = false;
 
   console.log("Ergebnis-Payload:", payload);
+
+  // Tutorial-Uebermittlung laeuft best-effort (per no-cors ohnehin nicht
+  // zuverlaessig auslesbar, siehe submitResults()) -- ein Netzwerkfehler soll
+  // Teilnehmende nicht von den echten Leveln abhalten, daher immer weiter.
+  if (tutorialMode) {
+    finishTutorial();
+    return;
+  }
+
+  renderLevelBar();
 });
 
 // ------------------------------------------------------------------------
@@ -436,5 +493,13 @@ function setupResizer(handle, cssVar, { min, max, invert }) {
 setupResizer(document.getElementById("resizer-1"), "--ranking-w", { min: 170, max: 520, invert: false });
 setupResizer(document.getElementById("resizer-2"), "--comments-w", { min: 240, max: 620, invert: true });
 
-renderLevelBar();
-loadLevelIntoDom(currentLevel);
+// Start immer mit dem Tutorial (9 domaenenfremde Beispielbilder) vor Level 1
+// (siehe TUTORIAL_IMAGES weiter oben); Level-Umschaltung ergibt hier keinen
+// Sinn und bleibt daher bis finishTutorial() versteckt.
+levelBar.classList.add("hidden");
+document.querySelector(".layout").classList.add("tutorial-active");
+legendText.textContent = "Bild auswählen, dann Zielposition anklicken – zum Ausprobieren, keine Bewertung";
+legendTagEasy.textContent = "leicht zu erfassen";
+legendTagHard.textContent = "schwer zu erfassen";
+submitBtn.textContent = "Weiter zu Level 1";
+loadCurrentIntoDom();
