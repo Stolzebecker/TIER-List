@@ -13,7 +13,7 @@ body {
   height: 100vh;
 }
 
-/* --- Topbar: Level-Auswahl + Legende (ersetzt die frueheren Spalten-Ueberschriften) --- */
+/* --- Topbar: Level-Auswahl + Legende --- */
 
 .topbar {
   flex: 0 0 auto;
@@ -68,31 +68,71 @@ body {
   flex: 0 0 auto;
 }
 
-/* --- Hauptlayout: 3 Spalten, volle Resthoehe --- */
+/* --- Hauptlayout: 3 Spalten + 2 ziehbare Trennlinien, volle Resthoehe ---
+   Spaltenbreiten liegen in CSS-Variablen, damit resize.js sie per JS
+   (layout.style.setProperty) veraendern kann; Bildpool bleibt 1fr und
+   nimmt die verbleibende Breite auf. --- */
 
 .layout {
+  --ranking-w: 260px;
+  --comments-w: 340px;
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 230px 1fr 340px;
+  grid-template-columns: var(--ranking-w) 6px 1fr 6px var(--comments-w);
   grid-template-rows: 1fr;
-  grid-template-areas: "ranking pool comments";
-  gap: 1px;
   background: #d8dadf;
+}
+
+.resizer {
+  background: #d8dadf;
+  cursor: col-resize;
+  position: relative;
+}
+
+.resizer:hover, .resizer.dragging {
+  background: #93c5fd;
+}
+
+.resizer:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -1px;
 }
 
 .ranking-zone, .pool-zone, .comments-zone {
   background: #fff;
   overflow: hidden;
   display: flex;
-  flex-direction: column;
 }
 
-.ranking-zone { grid-area: ranking; padding: 10px; }
-.pool-zone { grid-area: pool; padding: 14px; }
-.comments-zone { grid-area: comments; padding: 16px 20px; gap: 16px; overflow: auto; }
+/* container-type erlaubt cqw-Einheiten weiter unten, damit Bildgroessen
+   automatisch mit der (per Resizer veraenderbaren) Spaltenbreite skalieren. */
+.ranking-zone { flex-direction: row; container-type: inline-size; }
+.pool-zone { flex-direction: column; padding: 14px; container-type: inline-size; }
+.comments-zone { flex-direction: column; padding: 16px 20px; gap: 16px; overflow: auto; }
 
 h2 { margin: 0 0 12px; font-size: 1.05rem; }
+
+/* Seitliche, vertikale Beschriftung der Rangreihenfolge-Spalte -- spart
+   Platz gegenueber einer horizontalen Ueberschrift. */
+.ranking-label {
+  flex: 0 0 auto;
+  width: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f5f7;
+  border-right: 1px solid #d8dadf;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #555;
+  padding: 8px 0;
+  white-space: nowrap;
+}
 
 .track {
   flex: 1;
@@ -105,19 +145,29 @@ h2 { margin: 0 0 12px; font-size: 1.05rem; }
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 4px;
+  padding: 8px;
+  /* Durchgehender Gruen->Rot-Verlauf ueber die gesamte Spalte: macht auch
+     dort sichtbar, "wo" ein Bild landet, wo noch keine Karte liegt (leere
+     Restplaetze) bzw. in den Zwischenraeumen zwischen den Karten. */
+  background: linear-gradient(
+    to bottom,
+    hsl(142, 60%, 78%) 0%,
+    hsl(90, 60%, 80%) 25%,
+    hsl(50, 80%, 78%) 50%,
+    hsl(25, 85%, 78%) 75%,
+    hsl(0, 75%, 80%) 100%
+  );
 }
 
 .track--pool {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 22cqw, 320px), 1fr));
   align-content: flex-start;
   gap: 16px;
   padding: 4px;
 }
 
 .track.placing {
-  background-color: #eff6ff;
   box-shadow: inset 0 0 0 2px #93c5fd;
 }
 
@@ -175,6 +225,7 @@ h2 { margin: 0 0 12px; font-size: 1.05rem; }
   height: 8px;
   border-radius: 50%;
   background: #16a34a;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.9);
 }
 
 .zoom-btn {
@@ -190,7 +241,14 @@ h2 { margin: 0 0 12px; font-size: 1.05rem; }
   padding: 3px 6px;
 }
 
-/* --- Ranking-Kontext: kompakte horizontale Zeilen statt Quadrate --- */
+/* --- Pool-Kontext: Bildgroesse skaliert mit der Spaltenbreite (cqw) --- */
+
+.pool-zone .card img {
+  aspect-ratio: 1 / 1;
+}
+
+/* --- Ranking-Kontext: kompakte horizontale Zeilen statt Quadrate,
+   Thumbnail-Groesse ebenfalls an die (ziehbare) Spaltenbreite gekoppelt --- */
 
 .ranking-zone .card {
   width: 100%;
@@ -201,11 +259,12 @@ h2 { margin: 0 0 12px; font-size: 1.05rem; }
   padding: 4px 8px 4px 4px;
   border-left-width: 4px;
   flex: 0 0 auto;
+  background: rgba(255,255,255,0.92);
 }
 
 .ranking-zone .card img {
-  width: 40px;
-  height: 40px;
+  width: clamp(32px, 16cqw, 96px);
+  height: clamp(32px, 16cqw, 96px);
   flex: 0 0 auto;
 }
 
@@ -222,6 +281,7 @@ h2 { margin: 0 0 12px; font-size: 1.05rem; }
   position: static;
   flex: 0 0 auto;
   margin-left: -2px;
+  box-shadow: none;
 }
 
 .ranking-zone .zoom-btn {
@@ -320,15 +380,13 @@ h2 { margin: 0 0 12px; font-size: 1.05rem; }
   .page { height: auto; min-height: 100vh; }
 
   .layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     grid-template-rows: auto auto auto;
-    grid-template-areas:
-      "ranking"
-      "pool"
-      "comments";
     height: auto;
     min-height: 100vh;
   }
+
+  .resizer { display: none; }
 
   .ranking-zone .track { max-height: 280px; }
   .pool-zone .track { max-height: 360px; }

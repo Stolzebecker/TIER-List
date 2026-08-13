@@ -355,5 +355,62 @@ async function submitResults(payload) {
   }
 }
 
+// --- Spalten-Resizer ---------------------------------------------------------
+// Erlaubt, die Breite der Rangreihenfolge- und der Kommentare-Spalte per
+// Ziehen anzupassen; der Bilder-Pool in der Mitte (1fr) nimmt den Rest ein.
+// Bildgroessen skalieren automatisch mit (siehe cqw-Regeln in style.css,
+// container-type: inline-size auf .ranking-zone/.pool-zone) -- dafuer ist
+// hier keine JS-Logik noetig, nur die Spaltenbreite selbst wird gesetzt.
+
+const layoutEl = document.querySelector(".layout");
+
+function setupResizer(handle, cssVar, { min, max, invert }) {
+  function currentWidth() {
+    const raw = getComputedStyle(layoutEl).getPropertyValue(cssVar);
+    return parseFloat(raw) || 0;
+  }
+
+  function applyDelta(delta) {
+    const startWidth = currentWidth();
+    const signedDelta = invert ? -delta : delta;
+    const newWidth = Math.min(max, Math.max(min, startWidth + signedDelta));
+    layoutEl.style.setProperty(cssVar, `${newWidth}px`);
+  }
+
+  handle.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = currentWidth();
+    handle.classList.add("dragging");
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    function onMove(ev) {
+      const delta = (invert ? -1 : 1) * (ev.clientX - startX);
+      const newWidth = Math.min(max, Math.max(min, startWidth + delta));
+      layoutEl.style.setProperty(cssVar, `${newWidth}px`);
+    }
+
+    function onUp() {
+      handle.classList.remove("dragging");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+
+  handle.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") { applyDelta(-20); e.preventDefault(); }
+    if (e.key === "ArrowRight") { applyDelta(20); e.preventDefault(); }
+  });
+}
+
+setupResizer(document.getElementById("resizer-1"), "--ranking-w", { min: 170, max: 520, invert: false });
+setupResizer(document.getElementById("resizer-2"), "--comments-w", { min: 240, max: 620, invert: true });
+
 renderLevelBar();
 loadLevelIntoDom(currentLevel);

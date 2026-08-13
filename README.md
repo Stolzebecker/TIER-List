@@ -7,10 +7,15 @@ visuelle Komplexität von Fernerkundungsbildern).
 Probandinnen und Probanden wählen pro Level ein Bild aus der Bilder-Ablage
 (Mitte) per Klick aus und legen es per zweitem Klick auf der Zielposition in
 der Rangreihe (links, vertikal) ab — Rang 1 oben = am wenigsten komplex,
-Rang 12 unten = am komplexesten, farblich von Grün nach Rot codiert (Legende
-oben). Jedes Bild lässt sich über die Lupe vergrößern. Rechts können ein
-allgemeiner Kommentar sowie ein Kommentar pro ausgewähltem Bild hinterlegt
-werden.
+Rang 12 unten = am komplexesten. Die Rangreihen-Spalte ist selbst durchgehend
+grün (einfach) nach rot (komplex) eingefärbt, damit auch unbelegte Plätze
+erkennbar sind; zusätzlich Legende oben und farbige Rang-Badges/Kartenrahmen.
+Jedes Bild lässt sich über die Lupe vergrößern. Rechts können ein allgemeiner
+Kommentar sowie ein Kommentar pro ausgewähltem Bild hinterlegt werden.
+
+Die drei Spalten (Rangreihenfolge, Bilder-Pool, Kommentare) lassen sich per
+Ziehen an den schmalen Trennlinien in der Breite anpassen — die Bildgrößen
+skalieren dabei automatisch mit (CSS Container Queries).
 
 ## Level & Bildauswahl
 

@@ -20,12 +20,19 @@
 
   <div class="layout">
     <section class="ranking-zone" aria-label="Rangreihenfolge, Rang 1 = einfach, Rang 12 = komplex">
+      <div class="ranking-label" aria-hidden="true">Rangreihenfolge</div>
       <div id="ranking-track" class="track track--ranking" data-zone="ranking"></div>
     </section>
+
+    <div class="resizer" id="resizer-1" role="separator" aria-orientation="vertical"
+         aria-label="Breite der Rangreihenfolge-Spalte anpassen" tabindex="0"></div>
 
     <main class="pool-zone" aria-label="Bilder-Pool">
       <div id="pool-track" class="track track--pool" data-zone="pool"></div>
     </main>
+
+    <div class="resizer" id="resizer-2" role="separator" aria-orientation="vertical"
+         aria-label="Breite der Kommentare-Spalte anpassen" tabindex="0"></div>
 
     <aside class="comments-zone">
       <h2>Kommentare</h2>
